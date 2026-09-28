@@ -2,17 +2,22 @@ package modelo;
 
 public class VideoJuego {
 
-    public String titulo;
-    public String genero;
-    public double precio;
+    private String titulo;
+    private String genero;
+    private double precio;
 
     public VideoJuego() {
+        this("", "Otro", 0.0);
+    }
+
+    public VideoJuego(String titulo, String genero) {
+        this(titulo, genero, 0.0);
     }
 
     public VideoJuego(String titulo, String genero, double precio) {
-        this.titulo = titulo;
-        this.genero = genero;
-        this.precio = precio;
+        setTitulo(titulo);
+        setGenero(genero);
+        setPrecio(precio);
     }
 
     public String getTitulo() {
@@ -20,7 +25,10 @@ public class VideoJuego {
     }
 
     public void setTitulo(String titulo) {
-        this.titulo = titulo;
+        if (titulo == null || titulo.trim().isEmpty()) {
+            throw new IllegalArgumentException("El título no puede estar vacío.");
+        }
+        this.titulo = titulo.trim();
     }
 
     public String getGenero() {
@@ -28,6 +36,9 @@ public class VideoJuego {
     }
 
     public void setGenero(String genero) {
+        if (genero == null || genero.trim().isEmpty()) {
+            throw new IllegalArgumentException("Debe seleccionar un género.");
+        }
         this.genero = genero;
     }
 
@@ -36,12 +47,25 @@ public class VideoJuego {
     }
 
     public void setPrecio(double precio) {
+        if (precio < 0) {
+            throw new IllegalArgumentException("El precio no puede ser negativo.");
+        }
         this.precio = precio;
     }
 
-    public Object[] RegistrarDatos() {
-        Object[] fila = {titulo, genero, precio};
-        return fila;
+    public Object[] registrarDatos() {
+        return new Object[]{titulo, genero, precio};
     }
-    
+
+    public Object[] registrarDatos(boolean conSimbolo) {
+        if (conSimbolo) {
+            return new Object[]{titulo, genero, "S/ " + String.format("%.2f", precio)};
+        }
+        return registrarDatos();
+    }
+
+    @Override
+    public String toString() {
+        return titulo + " (" + genero + ") - S/ " + precio;
+    }
 }
