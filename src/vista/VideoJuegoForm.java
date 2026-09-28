@@ -7,7 +7,7 @@ import modelo.VideoJuego;
 
 public class VideoJuegoForm extends javax.swing.JFrame {
 
-    ArrayList<VideoJuego> listaVideoJuego = new ArrayList<>();
+    private ArrayList<VideoJuego> listaVideoJuego = new ArrayList<>();
     DefaultTableModel tb;
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(VideoJuegoForm.class.getName());
@@ -15,17 +15,22 @@ public class VideoJuegoForm extends javax.swing.JFrame {
     public VideoJuegoForm() {
         initComponents();
 
-        String titulo[] = {"Titulo", "Genero", "Precio"};
-        tb = new DefaultTableModel(null, titulo);
-
+        String[] titulo = {"Titulo", "Genero", "Precio"};
+        tb = new DefaultTableModel(null, titulo) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         tbSalida.setModel(tb);
 
-        // Cargar los cmb
         cbxGenero.addItem("Terror");
         cbxGenero.addItem("Novela Visual");
         cbxGenero.addItem("Roblox");
         cbxGenero.addItem("Comedia");
         cbxGenero.addItem("Otro");
+
+        actualizarCantidad();
     }
 
     @SuppressWarnings("unchecked")
@@ -61,7 +66,7 @@ public class VideoJuegoForm extends javax.swing.JFrame {
 
         btnRegistrar.setBackground(new java.awt.Color(102, 255, 102));
         btnRegistrar.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        btnRegistrar.setText("REGISTRAR");
+        btnRegistrar.setText("AGREGAR");
         btnRegistrar.addActionListener(this::btnRegistrarActionPerformed);
 
         btnLimpiar.setBackground(new java.awt.Color(200, 242, 253));
@@ -128,6 +133,7 @@ public class VideoJuegoForm extends javax.swing.JFrame {
                 btnEliminarMouseClicked(evt);
             }
         });
+        btnEliminar.addActionListener(this::btnEliminarActionPerformed);
         getContentPane().add(btnEliminar, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 360, 160, 30));
 
         lblCantidad.setFont(new java.awt.Font("Segoe UI", 3, 12)); // NOI18N
@@ -139,61 +145,90 @@ public class VideoJuegoForm extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
+    private void mostrarMensaje(String mensaje) {
+        JOptionPane.showMessageDialog(this, mensaje);
+    }
+
+    private void mostrarMensaje(String mensaje, int tipo) {
+        JOptionPane.showMessageDialog(this, mensaje, "Registro de Videojuegos", tipo);
+    }
+
     public void Limpiar() {
         txtTitulo.setText("");
-        cbxGenero.setSelectedItem("");
+        cbxGenero.setSelectedIndex(0);
         txtPrecio.setText("");
+        txtTitulo.requestFocus();
+    }
+
+    private void actualizarCantidad() {
+        lblCantidad.setText("Cant. registrada: " + listaVideoJuego.size());
     }
 
     private void btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegistrarActionPerformed
-
-        if (txtTitulo.getText().trim().isEmpty() || txtPrecio.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Completar campos.");
-            return;
-        }
-
         try {
-            VideoJuego vj = new VideoJuego();
-            vj.setTitulo(txtTitulo.getText());
-            vj.setGenero(cbxGenero.getSelectedItem().toString());
-            vj.setPrecio(Double.parseDouble(txtPrecio.getText()));
+            String titulo = txtTitulo.getText().trim();
+            String precioTxt = txtPrecio.getText().trim();
+
+            if (titulo.isEmpty() || precioTxt.isEmpty()) {
+                mostrarMensaje("Complete todos los campos.", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            double precio = Double.parseDouble(precioTxt);
+            String genero = cbxGenero.getSelectedItem().toString();
+
+            VideoJuego vj = new VideoJuego(titulo, genero, precio);
 
             listaVideoJuego.add(vj);
-            tb.addRow(vj.RegistrarDatos());
+            tb.addRow(vj.registrarDatos());
+            actualizarCantidad();
 
-            lblCantidad.setText("Cant. registrada: " + listaVideoJuego.size());
-
-            JOptionPane.showMessageDialog(null, "VideoJuego registrada exitosamente.");
+            mostrarMensaje("Videojuego agregado correctamente.");
             Limpiar();
+
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null, "No se pudo registrar al videojuego .");
+            mostrarMensaje("El precio debe ser un número válido (ej. 59.90).", JOptionPane.ERROR_MESSAGE);
+            txtPrecio.requestFocus();
+        } catch (IllegalArgumentException e) {
+            mostrarMensaje(e.getMessage(), JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            mostrarMensaje("Error inesperado: " + e.getMessage(), JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_btnRegistrarActionPerformed
 
     private void btnEliminarMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnEliminarMouseClicked
         int fila = tbSalida.getSelectedRow();
 
-        if (fila >= 0) {
-            VideoJuego vj = listaVideoJuego.get(fila);
-            int alert = JOptionPane.showConfirmDialog(null,
-                    "¿Deseas eliminar " + vj.getTitulo() + " ?",
-                    "Eliminar",
-                    JOptionPane.YES_NO_OPTION);
-            if (alert == JOptionPane.YES_OPTION) {
-                listaVideoJuego.remove(fila);
-                tb.removeRow(fila);
-
-                lblCantidad.setText("Cant. registrada: " + listaVideoJuego.size());
-                JOptionPane.showMessageDialog(null, "VideoJuego eliminado");
-            }
+        if (fila < 0) {
+            mostrarMensaje("Seleccione un videojuego de la tabla.", JOptionPane.WARNING_MESSAGE);
+            return;
         }
 
+        try {
+            VideoJuego vj = listaVideoJuego.get(fila);
+            int opcion = JOptionPane.showConfirmDialog(this,
+                    "¿Deseas eliminar \"" + vj.getTitulo() + "\"?",
+                    "Eliminar", JOptionPane.YES_NO_OPTION);
+
+            if (opcion == JOptionPane.YES_OPTION) {
+                listaVideoJuego.remove(fila);  // remove() del ArrayList
+                tb.removeRow(fila);
+                actualizarCantidad();          // size()
+                mostrarMensaje("Videojuego eliminado.");
+            }
+        } catch (IndexOutOfBoundsException e) {
+            mostrarMensaje("No se pudo eliminar: la fila no existe.", JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_btnEliminarMouseClicked
 
     private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
         // TODO add your handling code here:
         Limpiar();
     }//GEN-LAST:event_btnLimpiarActionPerformed
+
+    private void btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnEliminarActionPerformed
 
     public static void main(String args[]) {
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">

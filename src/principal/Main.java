@@ -1,13 +1,12 @@
 package principal;
 
+import javax.swing.SwingUtilities;
 import vista.VideoJuegoForm;
 
 public class Main {
 
     public static void main(String[] args) {
-
-        VideoJuegoForm vf = new VideoJuegoForm();
-        vf.setVisible(true);
+        SwingUtilities.invokeLater(() -> new VideoJuegoForm().setVisible(true));
     }
 
 }
